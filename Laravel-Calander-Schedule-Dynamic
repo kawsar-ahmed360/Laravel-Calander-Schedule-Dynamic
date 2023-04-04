@@ -1,0 +1,145 @@
+https://blog.quickadminpanel.com/tasks-calendar-with-laravel-fullcalendar-quickadminpanel/
+
+
+
+Routes and MVC
+So, we have a fresh Laravel 5.4 project, and then we need to create tasks database/model.
+
+php artisan make:model Task -m
+And then let’s fill in our migration file with this structure:
+
+Schema::create('tasks', function (Blueprint $table) {
+    $table->increments('id');
+    $table->string('name');
+    $table->text('description')->nullable();
+    $table->date('task_date');
+    $table->timestamps();
+});
+So every task will have a name, description and task_date. Nothing too difficult, for demo purposes.
+And we will in those fields in our Model file – app/Task.php:
+
+protected $fillable = ['name', 'description', 'task_date'];
+Next, we create a resource controller with this command:
+
+php artisan make:controller TasksController --resource
+And assign it to routes/web.php:
+
+Route::resource('tasks', 'TasksController');
+We have a controller generated with usual REST methods: index(), create(), store(), show(), edit(), update() and destroy().
+
+Let’s start with index(), create() and store() first:
+
+
+
+
+
+public function index()
+{
+    $tasks = Task::all();
+    return view('tasks.index', compact('tasks'));
+}
+
+public function create()
+{
+    return view('tasks.create');
+}
+
+public function store(Request $request)
+{
+    Task::create($request->all());
+    return redirect()->route('tasks.index');
+}
+
+
+
+
+
+Simple, right? Create form is in resources/views/tasks/create.blade.php:
+
+<form action="{{ route('tasks.store') }}" method="post">
+  {{ csrf_field() }}
+  Task name:
+  <br />
+  <input type="text" name="name" />
+  <br /><br />
+  Task description:
+  <br />
+  <textarea name="description"></textarea>
+  <br /><br />
+  Start time:
+  <br />
+  <input type="text" name="task_date" class="date" />
+  <br /><br />
+  <input type="submit" value="Save" />
+</form>
+Let’s also add a datepicker from JQuery UI:
+
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="https://code.jquery.com/ui/1.11.3/jquery-ui.min.js"></script>
+<script>
+    $('.date').datepicker({
+        autoclose: true,
+        dateFormat: "yy-mm-dd"
+    });
+</script>
+
+
+And we have something like this:
+
+task create laravel
+
+Viewing tasks with FullCalendar
+The form above should already be working, and in the database we will see something like this:
+
+tasks database
+
+Now, let’s put it all on the calendar. We will use FullCalendar library for that.
+
+Here’s how our resources/views/tasks/index.blade.php looks like:
+
+
+
+
+
+
+
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.min.css' />
+
+<h3>Calendar</h3>
+
+<div id='calendar'></div>
+
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.min.js'></script>
+<script>
+    $(document).ready(function() {
+        // page is now ready, initialize the calendar...
+        $('#calendar').fullCalendar({
+            // put your options and callbacks here
+            events : [
+                @foreach($tasks as $task)
+                {
+                    title : '{{ $task->name }}',
+                    start : '{{ $task->task_date }}',
+                    url : '{{ route('tasks.edit', $task->id) }}'
+                },
+                @endforeach
+            ]
+        })
+    });
+</script>
+
+
+
+
+As you can see, we’re loading FullCalendar’s CSS and JS, and then we assign empty div element to load the calendar.
+
+And in the calendar loading function we fill it in with an array of our tasks.
+
+Result looks like this:
+
+fullcalendar laravel
+
+
+
